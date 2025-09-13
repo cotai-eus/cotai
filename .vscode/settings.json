@@ -1,0 +1,18 @@
+{
+  "files.exclude": {
+    "**/.next": true,
+    "**/node_modules": true
+  },
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+  "tailwindCSS.includeLanguages": {
+    "javascript": "javascript",
+    "typescript": "typescript",
+    "typescriptreact": "typescriptreact",
+    "html": "html",
+    "css": "css",
+    "scss": "scss"
+  },
+  // Removed editor.formatOnSave and codeActionsOnSave to avoid schema errors in some VS Code versions
+}
