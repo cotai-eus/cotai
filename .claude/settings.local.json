@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(find:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(mkdir:*)",
+      "Bash(docker compose:*)",
+      "Bash(lsof:*)",
+      "Bash(netstat:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker volume:*)",
+      "Bash(docker network:*)"
     ]
   }
 }
