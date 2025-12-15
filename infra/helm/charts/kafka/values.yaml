@@ -1,0 +1,191 @@
+# Kafka Helm Values for CotAI Platform
+# Based on Bitnami Kafka chart
+
+replicaCount: 3
+
+image:
+  registry: docker.io
+  repository: bitnami/kafka
+  tag: 3.6.1
+  pullPolicy: IfNotPresent
+
+# Kafka configuration
+listeners:
+  client:
+    containerPort: 9092
+    protocol: PLAINTEXT
+    name: CLIENT
+  controller:
+    containerPort: 9093
+    protocol: PLAINTEXT
+    name: CONTROLLER
+  interbroker:
+    containerPort: 9094
+    protocol: PLAINTEXT
+    name: INTERNAL
+
+controller:
+  replicaCount: 3
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: "gp3"
+  accessModes:
+    - ReadWriteOnce
+  size: 100Gi
+
+# Resources
+resources:
+  limits:
+    cpu: 2000m
+    memory: 8Gi
+  requests:
+    cpu: 1000m
+    memory: 4Gi
+
+# High Availability
+podDisruptionBudget:
+  create: true
+  minAvailable: 2
+
+# Affinity for multi-AZ distribution
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - kafka
+      topologyKey: topology.kubernetes.io/zone
+
+# Monitoring
+metrics:
+  jmx:
+    enabled: true
+  kafka:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: cotai-observability
+    interval: 30s
+
+# Probes
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 120
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 3
+  successThreshold: 1
+
+# Kafka configuration overrides
+config: |-
+  # Replication settings
+  default.replication.factor=3
+  min.insync.replicas=2
+  unclean.leader.election.enable=false
+
+  # Retention settings
+  log.retention.hours=168
+  log.retention.bytes=107374182400
+  log.segment.bytes=1073741824
+
+  # Performance settings
+  num.network.threads=8
+  num.io.threads=8
+  socket.send.buffer.bytes=102400
+  socket.receive.buffer.bytes=102400
+  socket.request.max.bytes=104857600
+
+  # Compression
+  compression.type=snappy
+
+  # Auto create topics
+  auto.create.topics.enable=false
+
+  # Transaction settings
+  transaction.state.log.replication.factor=3
+  transaction.state.log.min.isr=2
+
+  # Group coordinator settings
+  offsets.topic.replication.factor=3
+  offsets.topic.num.partitions=50
+
+# Zookeeper (required for Kafka < 3.x)
+zookeeper:
+  enabled: false
+
+# Use KRaft mode (Kafka without Zookeeper)
+kraft:
+  enabled: true
+
+# Provisioning (topics, users, ACLs)
+provisioning:
+  enabled: true
+  topics:
+    - name: edital.raw
+      partitions: 12
+      replicationFactor: 3
+      config:
+        retention.ms: "604800000" # 7 days
+        compression.type: "snappy"
+        min.insync.replicas: "2"
+    - name: edital.normalized
+      partitions: 12
+      replicationFactor: 3
+      config:
+        retention.ms: "2592000000" # 30 days
+        compression.type: "snappy"
+        min.insync.replicas: "2"
+    - name: licitacao.status.changed
+      partitions: 12
+      replicationFactor: 3
+      config:
+        retention.ms: "7776000000" # 90 days (audit)
+        compression.type: "snappy"
+        min.insync.replicas: "2"
+    - name: audit.events
+      partitions: 24
+      replicationFactor: 3
+      config:
+        retention.ms: "7776000000" # 90 days
+        compression.type: "gzip"
+        min.insync.replicas: "2"
+        segment.ms: "86400000" # 1 day
+    - name: tenant.lifecycle
+      partitions: 6
+      replicationFactor: 3
+      config:
+        retention.ms: "-1" # Infinite retention
+        compression.type: "snappy"
+        min.insync.replicas: "2"
+
+service:
+  type: ClusterIP
+  ports:
+    client: 9092
+
+# Node selector
+nodeSelector:
+  role: general
+  environment: production
+
+# Extra environment variables
+extraEnvVars:
+  - name: KAFKA_HEAP_OPTS
+    value: "-Xmx4G -Xms4G"
+  - name: KAFKA_LOG_FLUSH_INTERVAL_MESSAGES
+    value: "10000"
+  - name: KAFKA_LOG_FLUSH_INTERVAL_MS
+    value: "1000"

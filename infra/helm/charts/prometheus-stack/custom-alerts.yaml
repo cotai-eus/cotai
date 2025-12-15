@@ -1,0 +1,171 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cotai-custom-alerts
+  namespace: cotai-observability
+  labels:
+    prometheus: kube-prometheus
+spec:
+  groups:
+    - name: cotai.api.alerts
+      interval: 30s
+      rules:
+        - alert: HighAPIErrorRate
+          expr: |
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service, namespace)
+            /
+            sum(rate(http_requests_total[5m])) by (service, namespace)
+            > 0.01
+          for: 5m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "High API error rate detected"
+            description: "Service {{ $labels.service }} in namespace {{ $labels.namespace }} has error rate above 1% (current: {{ $value | humanizePercentage }})"
+
+        - alert: HighAPILatency
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, namespace)
+            ) > 0.2
+          for: 5m
+          labels:
+            severity: warning
+            component: api
+          annotations:
+            summary: "High API latency detected"
+            description: "Service {{ $labels.service }} p95 latency is {{ $value }}s (threshold: 0.2s)"
+
+    - name: cotai.messaging.alerts
+      interval: 30s
+      rules:
+        - alert: KafkaConsumerLag
+          expr: |
+            kafka_consumergroup_lag > 1000
+          for: 10m
+          labels:
+            severity: warning
+            component: kafka
+          annotations:
+            summary: "Kafka consumer lag is high"
+            description: "Consumer group {{ $labels.consumergroup }} has lag of {{ $value }} messages"
+
+        - alert: RabbitMQQueueBacklog
+          expr: |
+            rabbitmq_queue_messages_ready > 5000
+          for: 10m
+          labels:
+            severity: warning
+            component: rabbitmq
+          annotations:
+            summary: "RabbitMQ queue backlog detected"
+            description: "Queue {{ $labels.queue }} has {{ $value }} ready messages"
+
+        - alert: RabbitMQHighMemoryUsage
+          expr: |
+            rabbitmq_node_mem_used / rabbitmq_node_mem_limit > 0.8
+          for: 5m
+          labels:
+            severity: critical
+            component: rabbitmq
+          annotations:
+            summary: "RabbitMQ high memory usage"
+            description: "RabbitMQ node {{ $labels.node }} is using {{ $value | humanizePercentage }} of available memory"
+
+    - name: cotai.database.alerts
+      interval: 30s
+      rules:
+        - alert: PostgreSQLHighConnectionUsage
+          expr: |
+            pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            component: postgresql
+          annotations:
+            summary: "PostgreSQL connection pool near limit"
+            description: "Database {{ $labels.datname }} is using {{ $value | humanizePercentage }} of max connections"
+
+        - alert: PostgreSQLSlowQueries
+          expr: |
+            rate(pg_stat_statements_mean_time_seconds[5m]) > 1
+          for: 10m
+          labels:
+            severity: warning
+            component: postgresql
+          annotations:
+            summary: "PostgreSQL slow queries detected"
+            description: "Database {{ $labels.datname }} has slow queries averaging {{ $value }}s"
+
+        - alert: RedisHighMemoryUsage
+          expr: |
+            redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+          for: 5m
+          labels:
+            severity: warning
+            component: redis
+          annotations:
+            summary: "Redis high memory usage"
+            description: "Redis instance {{ $labels.instance }} is using {{ $value | humanizePercentage }} of max memory"
+
+    - name: cotai.workflow.alerts
+      interval: 30s
+      rules:
+        - alert: OCRProcessingBacklog
+          expr: |
+            rabbitmq_queue_messages_ready{queue="ocr.process"} > 100
+          for: 15m
+          labels:
+            severity: warning
+            component: ocr
+          annotations:
+            summary: "OCR processing backlog detected"
+            description: "OCR queue has {{ $value }} messages waiting for processing"
+
+        - alert: WorkflowExecutionFailures
+          expr: |
+            rate(temporal_workflow_failed_total[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: critical
+            component: workflow-engine
+          annotations:
+            summary: "High workflow failure rate"
+            description: "Workflow {{ $labels.workflow_type }} has failure rate of {{ $value }} per second"
+
+    - name: cotai.infrastructure.alerts
+      interval: 30s
+      rules:
+        - alert: PodCrashLooping
+          expr: |
+            rate(kube_pod_container_status_restarts_total[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: kubernetes
+          annotations:
+            summary: "Pod is crash looping"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is restarting frequently"
+
+        - alert: NodeDiskPressure
+          expr: |
+            kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+          for: 5m
+          labels:
+            severity: critical
+            component: kubernetes
+          annotations:
+            summary: "Node disk pressure detected"
+            description: "Node {{ $labels.node }} is experiencing disk pressure"
+
+        - alert: DeploymentReplicasMismatch
+          expr: |
+            kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+          for: 10m
+          labels:
+            severity: warning
+            component: kubernetes
+          annotations:
+            summary: "Deployment replicas mismatch"
+            description: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} has {{ $value }} replicas mismatch"

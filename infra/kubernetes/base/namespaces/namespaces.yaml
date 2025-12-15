@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cotai-dev
+  labels:
+    name: cotai-dev
+    environment: development
+    project: cotai
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cotai-staging
+  labels:
+    name: cotai-staging
+    environment: staging
+    project: cotai
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cotai-prod
+  labels:
+    name: cotai-prod
+    environment: production
+    project: cotai
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cotai-observability
+  labels:
+    name: cotai-observability
+    environment: shared
+    project: cotai
+    purpose: monitoring

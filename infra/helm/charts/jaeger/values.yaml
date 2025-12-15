@@ -1,0 +1,96 @@
+# Jaeger Helm Values for CotAI Platform
+# Based on Jaeger Operator chart
+
+# Use Jaeger Operator for production-grade deployment
+jaegerOperator:
+  enabled: true
+
+# Jaeger instance configuration
+jaeger:
+  create: true
+  spec:
+    strategy: production # production, streaming, or allInOne
+
+    # Collector configuration
+    collector:
+      maxReplicas: 5
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 2Gi
+        requests:
+          cpu: 500m
+          memory: 1Gi
+
+    # Query (UI) configuration
+    query:
+      replicas: 2
+      resources:
+        limits:
+          cpu: 500m
+          memory: 512Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+      # Ingress (optional)
+      ingress:
+        enabled: false
+        ingressClassName: nginx
+        hosts:
+          - jaeger.cotai.local
+        tls:
+          - secretName: jaeger-tls
+            hosts:
+              - jaeger.cotai.local
+
+    # Storage configuration - Elasticsearch backend
+    storage:
+      type: elasticsearch
+      elasticsearch:
+        nodeCount: 3
+        redundancyPolicy: SingleRedundancy
+        storage:
+          storageClassName: gp3
+          size: 100Gi
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+
+      # Retention configuration
+      esIndexCleaner:
+        enabled: true
+        numberOfDays: 7
+        schedule: "55 23 * * *"
+
+    # Agent configuration (sidecar)
+    agent:
+      strategy: DaemonSet
+      resources:
+        limits:
+          cpu: 200m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 64Mi
+
+    # Sampling configuration
+    sampling:
+      options:
+        default_strategy:
+          type: probabilistic
+          param: 0.1 # Sample 10% of traces in production
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  namespace: cotai-observability
+
+# Node selector
+nodeSelector:
+  role: general
+  environment: production

@@ -1,0 +1,221 @@
+# Prometheus Stack Helm Values for CotAI Platform
+# Based on kube-prometheus-stack chart
+
+# Global settings
+global:
+  rbac:
+    create: true
+
+# Prometheus Operator
+prometheusOperator:
+  enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Prometheus
+prometheus:
+  enabled: true
+
+  prometheusSpec:
+    retention: 30d
+    retentionSize: "90GB"
+
+    replicas: 2
+
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 8Gi
+      requests:
+        cpu: 1000m
+        memory: 4Gi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 100Gi
+
+    # Service monitors
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+    # Additional scrape configs for custom metrics
+    additionalScrapeConfigs:
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+    # Affinity for multi-AZ
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - prometheus
+          topologyKey: topology.kubernetes.io/zone
+
+# Alertmanager
+alertmanager:
+  enabled: true
+
+  alertmanagerSpec:
+    replicas: 3
+
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+# Grafana
+grafana:
+  enabled: true
+
+  adminPassword: "" # Should be stored in external secrets
+
+  replicas: 2
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  persistence:
+    enabled: true
+    storageClassName: gp3
+    size: 10Gi
+
+  # Datasources
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-operated:9090
+        access: proxy
+        isDefault: true
+      - name: Jaeger
+        type: jaeger
+        url: http://jaeger-query:16686
+        access: proxy
+
+  # Pre-configured dashboards for CotAI
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'cotai-dashboards'
+        orgId: 1
+        folder: 'CotAI'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/cotai
+
+  # Dashboard ConfigMaps
+  dashboards:
+    cotai-dashboards:
+      kubernetes-cluster:
+        gnetId: 7249
+        revision: 1
+        datasource: Prometheus
+      kafka-overview:
+        gnetId: 7589
+        revision: 5
+        datasource: Prometheus
+      rabbitmq-overview:
+        gnetId: 10991
+        revision: 11
+        datasource: Prometheus
+      redis-dashboard:
+        gnetId: 11835
+        revision: 1
+        datasource: Prometheus
+      postgresql-database:
+        gnetId: 9628
+        revision: 7
+        datasource: Prometheus
+
+  # Ingress (optional)
+  ingress:
+    enabled: false
+    ingressClassName: nginx
+    hosts:
+      - grafana.cotai.local
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.cotai.local
+
+# Node Exporter
+nodeExporter:
+  enabled: true
+
+# Kube State Metrics
+kubeStateMetrics:
+  enabled: true
+
+# Service monitors for CotAI services
+additionalServiceMonitors:
+  - name: cotai-services
+    selector:
+      matchLabels:
+        app.kubernetes.io/part-of: cotai
+    namespaceSelector:
+      matchNames:
+        - cotai-dev
+        - cotai-staging
+        - cotai-prod
+    endpoints:
+      - port: metrics
+        interval: 30s
+        path: /metrics

@@ -1,0 +1,115 @@
+{
+  "users": [
+    {
+      "name": "cotai_admin",
+      "password_hash": "CHANGEME",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "cotai"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "cotai_admin",
+      "vhost": "cotai",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "cotai.commands",
+      "vhost": "cotai",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "cotai.commands.dlq",
+      "vhost": "cotai",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "crawler.jobs",
+      "vhost": "cotai",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 3600000,
+        "x-max-length": 10000,
+        "x-overflow": "reject-publish",
+        "x-dead-letter-exchange": "cotai.commands.dlq"
+      }
+    },
+    {
+      "name": "ocr.process",
+      "vhost": "cotai",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 3600000,
+        "x-max-length": 5000,
+        "x-overflow": "reject-publish",
+        "x-dead-letter-exchange": "cotai.commands.dlq"
+      }
+    },
+    {
+      "name": "cotai.commands.dlq.queue",
+      "vhost": "cotai",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "cotai.commands",
+      "vhost": "cotai",
+      "destination": "crawler.jobs",
+      "destination_type": "queue",
+      "routing_key": "crawler.start",
+      "arguments": {}
+    },
+    {
+      "source": "cotai.commands",
+      "vhost": "cotai",
+      "destination": "ocr.process",
+      "destination_type": "queue",
+      "routing_key": "ocr.start",
+      "arguments": {}
+    },
+    {
+      "source": "cotai.commands.dlq",
+      "vhost": "cotai",
+      "destination": "cotai.commands.dlq.queue",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ],
+  "policies": [
+    {
+      "vhost": "cotai",
+      "name": "ha-all",
+      "pattern": ".*",
+      "definition": {
+        "ha-mode": "all",
+        "ha-sync-mode": "automatic",
+        "ha-sync-batch-size": 5
+      },
+      "priority": 0,
+      "apply-to": "all"
+    }
+  ]
+}

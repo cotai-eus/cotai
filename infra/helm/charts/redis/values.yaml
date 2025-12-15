@@ -1,0 +1,114 @@
+# Redis Cluster Helm Values for CotAI Platform
+# Based on Bitnami Redis Cluster chart
+
+cluster:
+  enabled: true
+  nodes: 6 # 3 masters + 3 replicas
+
+image:
+  registry: docker.io
+  repository: bitnami/redis-cluster
+  tag: 7.2.4
+  pullPolicy: IfNotPresent
+
+# Authentication
+password: "" # Should be stored in external secrets
+existingSecret: redis-credentials
+existingSecretPasswordKey: password
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: "gp3"
+  size: 20Gi
+
+# Resources
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# High Availability
+podDisruptionBudget:
+  create: true
+  minAvailable: 4 # At least 2 masters + 2 replicas
+
+# Affinity for multi-AZ distribution
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - redis-cluster
+        topologyKey: topology.kubernetes.io/zone
+
+# Monitoring
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: cotai-observability
+    interval: 30s
+
+# Redis configuration
+redis:
+  # Memory management
+  maxmemory: "1536mb"
+  maxmemoryPolicy: "allkeys-lru"
+
+  # Persistence (AOF + RDB)
+  appendonly: "yes"
+  appendfsync: "everysec"
+  save: "900 1 300 10"
+
+  # Performance
+  tcpBacklog: "511"
+  tcpKeepalive: "300"
+  timeout: "0"
+
+  # Cluster configuration
+  clusterEnabled: "yes"
+  clusterNodeTimeout: "15000"
+  clusterRequireFullCoverage: "no"
+
+# Probes
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+  successThreshold: 1
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 6379
+
+# Node selector
+nodeSelector:
+  role: general
+  environment: production
+
+# Extra configuration for CotAI use cases
+extraEnvVars:
+  - name: REDIS_AOF_LOAD_TRUNCATED
+    value: "yes"
+  - name: REDIS_MAXMEMORY_SAMPLES
+    value: "5"
