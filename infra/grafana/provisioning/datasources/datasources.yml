@@ -1,27 +1,62 @@
+# Grafana Datasources for CotAI Development Environment
+
 apiVersion: 1
 
 datasources:
+  # Prometheus
   - name: Prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090
     isDefault: true
     editable: true
+    jsonData:
+      timeInterval: '15s'
 
+  # Jaeger for distributed tracing
   - name: Jaeger
     type: jaeger
     access: proxy
     url: http://jaeger:16686
     editable: true
 
+  # PostgreSQL - Identity DB
+  - name: PostgreSQL-Identity
+    type: postgres
+    access: proxy
+    url: postgres-identity:5432
+    database: cotai_identity
+    user: cotai_dev
+    secureJsonData:
+      password: dev_password
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1500
+    editable: true
+
+  # PostgreSQL - Core DB
+  - name: PostgreSQL-Core
+    type: postgres
+    access: proxy
+    url: postgres-core:5432
+    database: cotai_core
+    user: cotai_dev
+    secureJsonData:
+      password: dev_password
+    jsonData:
+      sslmode: 'disable'
+      postgresVersion: 1500
+    editable: true
+
+  # Elasticsearch
   - name: Elasticsearch
     type: elasticsearch
     access: proxy
     url: http://elasticsearch:9200
-    database: "[logs-]YYYY.MM.DD"
+    database: '[cotai-*]'
     jsonData:
-      timeField: "@timestamp"
-      esVersion: "8.0.0"
-      logMessageField: message
-      logLevelField: level
+      esVersion: '8.11.0'
+      timeField: '@timestamp'
+      logMessageField: 'message'
+      logLevelField: 'level'
     editable: true

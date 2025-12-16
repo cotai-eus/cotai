@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: cotai_dev
       POSTGRES_PASSWORD: dev_password
     ports:
-      - "5432:5432"
+      - "5436:5432"
     volumes:
       - postgres-identity-data:/var/lib/postgresql/data
       - ./infra/sql/init-identity.sql:/docker-entrypoint-initdb.d/init.sql
@@ -86,7 +86,7 @@ services:
     container_name: cotai-redis
     command: redis-server --requirepass dev_password --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -245,7 +245,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres-identity:5432/cotai_identity
+      KC_DB_URL: jdbc:postgresql://cotai-postgres-identity:5432/cotai_identity
       KC_DB_USERNAME: cotai_dev
       KC_DB_PASSWORD: dev_password
       KC_HTTP_PORT: 8080

@@ -9,7 +9,15 @@
       "Bash(netstat:*)",
       "Bash(docker system prune:*)",
       "Bash(docker volume:*)",
-      "Bash(docker network:*)"
+      "Bash(docker network:*)",
+      "Bash(docker logs:*)",
+      "Bash(chmod:*)",
+      "Bash(sudo lsof:*)",
+      "Bash(docker ps:*)",
+      "Bash(ss:*)",
+      "Bash(docker rm:*)",
+      "Bash(./scripts/validate-environment.sh:*)",
+      "Bash(docker exec:*)"
     ]
   }
 }
