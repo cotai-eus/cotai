@@ -31,7 +31,14 @@
       "Bash(make test:*)",
       "Bash(go install:*)",
       "Bash(./scripts/gen-proto.sh:*)",
-      "Bash(go get:*)"
+      "Bash(go get:*)",
+      "Bash(ls:*)",
+      "Bash(done)",
+      "Bash(xargs ls:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npx --yes @nestjs/cli new:*)"
     ]
   }
 }
