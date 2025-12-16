@@ -236,12 +236,16 @@ services:
     networks:
       - cotai-dev
 
-  # Keycloak (Auth Service)
+  # Keycloak (Auth Service) - Custom image with CotAI extensions
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.3
+    image: cotai-keycloak-custom:latest
+    build:
+      context: ./services/identity/auth-service
+      dockerfile: Dockerfile
     container_name: cotai-keycloak
     command: start-dev
     environment:
+      # Keycloak Configuration
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
@@ -252,12 +256,23 @@ services:
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_HEALTH_ENABLED: "true"
+
+      # Kafka Configuration for Event Listener
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_PRODUCER_CLIENT_ID: keycloak-event-publisher
+      KAFKA_ACKS: "1"
+      KAFKA_RETRIES: "3"
+      KAFKA_COMPRESSION_TYPE: snappy
+      KAFKA_LINGER_MS: "10"
+      KAFKA_BATCH_SIZE: "16384"
     ports:
       - "8080:8080"
     depends_on:
       - postgres-identity
+      - kafka
     volumes:
       - keycloak-data:/opt/keycloak/data
+      - ./infra/keycloak/realm-cotai.json:/opt/keycloak/data/import/realm-cotai.json:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 30s

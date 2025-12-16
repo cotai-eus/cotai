@@ -17,7 +17,12 @@
       "Bash(ss:*)",
       "Bash(docker rm:*)",
       "Bash(./scripts/validate-environment.sh:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(curl:*)",
+      "Bash(mvn --version:*)",
+      "Bash(java:*)",
+      "Bash(docker:*)",
+      "Bash(./build.sh:*)"
     ]
   }
 }
