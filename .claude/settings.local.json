@@ -22,7 +22,13 @@
       "Bash(mvn --version:*)",
       "Bash(java:*)",
       "Bash(docker:*)",
-      "Bash(./build.sh:*)"
+      "Bash(./build.sh:*)",
+      "Bash(go mod init:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(make build:*)",
+      "Bash(./bin/tenant-manager:*)",
+      "Bash(PORT=8082 GRPC_PORT=9082 ENV=development LOG_LEVEL=info DATABASE_HOST=localhost ./bin/tenant-manager:*)",
+      "Bash(make test:*)"
     ]
   }
 }

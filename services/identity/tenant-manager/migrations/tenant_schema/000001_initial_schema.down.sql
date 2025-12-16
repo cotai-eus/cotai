@@ -1,0 +1,6 @@
+-- Rollback initial schema
+
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS cotacoes CASCADE;
+DROP TABLE IF NOT EXISTS fornecedores CASCADE;
+DROP TABLE IF EXISTS licitacoes CASCADE;
