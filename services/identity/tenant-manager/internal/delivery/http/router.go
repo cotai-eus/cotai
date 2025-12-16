@@ -20,6 +20,7 @@ type RouterConfig struct {
 	LoggingMiddleware *middleware.LoggingMiddleware
 	RecoveryMiddleware *middleware.RecoveryMiddleware
 	CORSMiddleware *middleware.CORSMiddleware
+	MetricsMiddleware *middleware.MetricsMiddleware
 	Logger *zap.Logger
 }
 
@@ -30,9 +31,10 @@ func NewRouter(cfg RouterConfig) http.Handler {
 	// ==========================
 	// Global Middleware Chain
 	// ==========================
-	// Order matters: Recovery → Logging → CORS → RequestID → RealIP
+	// Order matters: Recovery → Logging → Metrics → CORS → RequestID → RealIP
 	r.Use(cfg.RecoveryMiddleware.Handler)
 	r.Use(cfg.LoggingMiddleware.Handler)
+	r.Use(cfg.MetricsMiddleware.Handler)
 	r.Use(cfg.CORSMiddleware.Handler)
 	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.RealIP)

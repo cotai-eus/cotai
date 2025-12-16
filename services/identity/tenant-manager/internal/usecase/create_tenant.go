@@ -47,7 +47,7 @@ type EventPublisher interface {
 	PublishTenantUpdated(ctx context.Context, tenant *domain.Tenant) error
 	PublishTenantSuspended(ctx context.Context, tenant *domain.Tenant) error
 	PublishTenantActivated(ctx context.Context, tenant *domain.Tenant) error
-	PublishTenantDeleted(ctx context.Context, tenantID uuid.UUID) error
+	PublishTenantDeleted(ctx context.Context, tenant *domain.Tenant) error
 }
 
 // NewCreateTenantUseCase creates a new CreateTenantUseCase

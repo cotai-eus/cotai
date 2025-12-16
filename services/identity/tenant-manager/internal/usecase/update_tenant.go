@@ -95,6 +95,17 @@ func (uc *UpdateTenantUseCase) Execute(ctx context.Context, cmd UpdateTenantComm
 		return nil, fmt.Errorf("failed to update tenant: %w", err)
 	}
 
+	// Publish event (async)
+	go func() {
+		publishCtx := context.Background()
+		if err := uc.publisher.PublishTenantUpdated(publishCtx, tenant); err != nil {
+			uc.logger.Error("Failed to publish tenant.updated event",
+				zap.String("tenant_id", tenant.TenantID.String()),
+				zap.Error(err),
+			)
+		}
+	}()
+
 	uc.logger.Info("Tenant updated",
 		zap.String("tenant_id", cmd.TenantID.String()),
 	)

@@ -71,7 +71,7 @@ func (uc *DeleteTenantUseCase) Execute(ctx context.Context, cmd DeleteTenantComm
 	// Publish event (async)
 	go func() {
 		publishCtx := context.Background()
-		if err := uc.publisher.PublishTenantDeleted(publishCtx, tenant.TenantID); err != nil {
+		if err := uc.publisher.PublishTenantDeleted(publishCtx, tenant); err != nil {
 			uc.logger.Error("Failed to publish tenant.deleted event",
 				zap.String("tenant_id", tenant.TenantID.String()),
 				zap.Error(err),

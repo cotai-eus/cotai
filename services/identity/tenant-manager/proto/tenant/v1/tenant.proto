@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package identity.tenant.v1;
+
+option go_package = "github.com/cotai/tenant-manager/proto/tenant/v1;tenantv1";
+
+import "google/protobuf/timestamp.proto";
+
+// TenantService provides internal gRPC API for tenant operations
+service TenantService {
+  // GetTenant retrieves a tenant by ID
+  rpc GetTenant(GetTenantRequest) returns (TenantResponse);
+
+  // GetTenantBySlug retrieves a tenant by slug
+  rpc GetTenantBySlug(GetBySlugRequest) returns (TenantResponse);
+
+  // ValidateTenant checks if a tenant exists and is active
+  rpc ValidateTenant(ValidateTenantRequest) returns (ValidationResponse);
+
+  // ListTenants retrieves a paginated list of tenants
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+}
+
+// Tenant represents a tenant entity
+message Tenant {
+  string id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  string slug = 4;
+  string schema_name = 5;
+  TenantStatus status = 6;
+  string plan = 7;
+  string contact_email = 8;
+  string contact_name = 9;
+  string billing_email = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+// TenantStatus represents the lifecycle status of a tenant
+enum TenantStatus {
+  TENANT_STATUS_UNSPECIFIED = 0;
+  TENANT_STATUS_PROVISIONING = 1;
+  TENANT_STATUS_ACTIVE = 2;
+  TENANT_STATUS_SUSPENDED = 3;
+  TENANT_STATUS_ARCHIVED = 4;
+  TENANT_STATUS_DELETED = 5;
+}
+
+// GetTenantRequest is the request for GetTenant
+message GetTenantRequest {
+  string tenant_id = 1;
+}
+
+// GetBySlugRequest is the request for GetTenantBySlug
+message GetBySlugRequest {
+  string slug = 1;
+}
+
+// ValidateTenantRequest is the request for ValidateTenant
+message ValidateTenantRequest {
+  string tenant_id = 1;
+}
+
+// ValidationResponse contains tenant validation result
+message ValidationResponse {
+  bool valid = 1;
+  string tenant_id = 2;
+  string schema_name = 3;
+  TenantStatus status = 4;
+  string message = 5;
+}
+
+// TenantResponse contains a single tenant
+message TenantResponse {
+  Tenant tenant = 1;
+}
+
+// ListTenantsRequest is the request for ListTenants
+message ListTenantsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string status = 3;
+  string plan = 4;
+  string search = 5;
+}
+
+// ListTenantsResponse contains a list of tenants with pagination
+message ListTenantsResponse {
+  repeated Tenant tenants = 1;
+  int32 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+  int32 total_pages = 5;
+}

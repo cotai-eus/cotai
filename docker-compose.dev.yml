@@ -281,6 +281,58 @@ services:
     networks:
       - cotai-dev
 
+  # Tenant Manager Service
+  tenant-manager:
+    build:
+      context: ./services/identity/tenant-manager
+      dockerfile: deployments/docker/Dockerfile
+    container_name: cotai-tenant-manager
+    environment:
+      # Server
+      PORT: 8082
+      GRPC_PORT: 9082
+      ENV: development
+      LOG_LEVEL: debug
+
+      # Database
+      DATABASE_HOST: postgres-identity
+      DATABASE_PORT: 5432
+      DATABASE_NAME: cotai_identity
+      DATABASE_USER: cotai_dev
+      DATABASE_PASSWORD: dev_password
+      DATABASE_MAX_CONNS: 25
+      MIGRATIONS_PATH: file://migrations/tenant_schema
+
+      # Kafka
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_TOPIC_TENANT_LIFECYCLE: tenant.lifecycle
+      KAFKA_CLIENT_ID: tenant-manager
+
+      # JWT
+      JWT_PUBLIC_KEY_URL: http://keycloak:8080/realms/cotai/protocol/openid-connect/certs
+      JWT_ISSUER: http://localhost:8080/realms/cotai
+
+      # Observability
+      JAEGER_AGENT_HOST: jaeger
+      JAEGER_AGENT_PORT: 6831
+      JAEGER_SERVICE_NAME: tenant-manager
+      PROMETHEUS_ENABLED: "true"
+    ports:
+      - "8082:8082"   # HTTP API
+      - "9082:9082"   # gRPC API
+    depends_on:
+      - postgres-identity
+      - kafka
+      - keycloak
+      - jaeger
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - cotai-dev
+
   # Jaeger (Distributed Tracing)
   jaeger:
     image: jaegertracing/all-in-one:1.53

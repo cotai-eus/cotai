@@ -23,6 +23,11 @@ func NewGetTenantUseCase(repo domain.TenantRepository, logger *zap.Logger) *GetT
 	}
 }
 
+// Execute retrieves a tenant by tenant_id (default method for gRPC)
+func (uc *GetTenantUseCase) Execute(ctx context.Context, tenantID uuid.UUID) (*domain.Tenant, error) {
+	return uc.ExecuteByTenantID(ctx, tenantID)
+}
+
 // ExecuteByID retrieves a tenant by ID
 func (uc *GetTenantUseCase) ExecuteByID(ctx context.Context, id uuid.UUID) (*domain.Tenant, error) {
 	tenant, err := uc.repo.GetByID(ctx, id)
@@ -63,4 +68,9 @@ func (uc *GetTenantUseCase) ExecuteBySlug(ctx context.Context, slug string) (*do
 	}
 
 	return tenant, nil
+}
+
+// GetBySlug is an alias for ExecuteBySlug (for gRPC compatibility)
+func (uc *GetTenantUseCase) GetBySlug(ctx context.Context, slug string) (*domain.Tenant, error) {
+	return uc.ExecuteBySlug(ctx, slug)
 }
